@@ -39,10 +39,17 @@ due_date was added to Task to support recurring tasks and scheduled_time was cha
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+The scheduler considers three things which are the priority level, scheduled time, and completion status but completed tasks are excluded from the daily plan. Priority is weighted first where a high priority task always come before a low priority task even if the low priority task is scheduled earlier in the day, and time is used as the tie breaker if they have the same priority level.
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
+
+The conflict detection only flags tasks that share the exact same scheduled time but it doesn't check for overlapping durations. So a 30 minute task at 08:00 and a 5 minute task at 08:15 would pass through without a warning even though they technically overlap.
+
+The tradeoff is simplicity where exact time is easy to find because overlap detection would need a start and end time and is more likely to produce false positives for tasks that could actually run at the same time. This is a reasonable tradeoff because the user can always manually check for overlaps if they want to be more precise.
+
 
 ---
 

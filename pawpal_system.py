@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from typing import Optional
 
 
@@ -10,10 +11,17 @@ class Task:
     scheduled_time: Optional[str] = None  # "HH:MM" format
     frequency: str = "once"  # "once", "daily", "weekly"
     completed: bool = False
+    due_date: Optional[date] = None
 
     def mark_complete(self):
         """Mark this task as done and set a new due date if it recurs."""
         self.completed = True
+        if self.frequency == "daily":
+            self.due_date = date.today() + timedelta(days=1)
+            self.completed = False
+        elif self.frequency == "weekly":
+            self.due_date = date.today() + timedelta(weeks=1)
+            self.completed = False
 
 
 @dataclass
@@ -74,3 +82,39 @@ class Scheduler:
                 t.scheduled_time or "99:99",
             ),
         )
+
+    def sort_by_time(self, tasks: list) -> list:
+        """Return tasks sorted by scheduled_time (HH:MM)."""
+        return sorted(tasks, key=lambda t: t.scheduled_time or "99:99")
+
+    def filter_tasks(self, pet_name: Optional[str] = None, completed: Optional[bool] = None) -> list:
+        """Return tasks filtered by pet name and/or completion status."""
+        results = []
+        for pet in self.owner.pets:
+            if pet_name and pet.name.lower() != pet_name.lower():
+                continue
+            for task in pet.get_tasks():
+                if completed is not None and task.completed != completed:
+                    continue
+                results.append(task)
+        return results
+
+    def detect_conflicts(self) -> list:
+        """Return a list of warning messages for tasks scheduled at the same time."""
+        seen = {}
+        warnings = []
+        for pet in self.owner.pets:
+            for task in pet.get_tasks():
+                if task.scheduled_time is None:
+                    continue
+                if task.scheduled_time in seen:
+                    warnings.append(
+                        f"Conflict at {task.scheduled_time}: '{task.title}' overlaps with '{seen[task.scheduled_time]}'"
+                    )
+                else:
+                    seen[task.scheduled_time] = task.title
+        return warnings
+
+    def handle_recurring(self, task: Task):
+        """After a recurring task is completed, create the next occurrence."""
+        task.mark_complete()
