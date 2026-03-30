@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from datetime import date
 from typing import Optional
 
 
@@ -11,11 +10,10 @@ class Task:
     scheduled_time: Optional[str] = None  # "HH:MM" format
     frequency: str = "once"  # "once", "daily", "weekly"
     completed: bool = False
-    due_date: Optional[date] = None
 
     def mark_complete(self):
         """Mark this task as done and set a new due date if it recurs."""
-        pass
+        self.completed = True
 
 
 @dataclass
@@ -25,15 +23,16 @@ class Pet:
 
     def add_task(self, task: Task):
         """Add a task to this pet's task list."""
-        pass
+        self.tasks.append(task)
 
     def remove_task(self, task: Task):
         """Remove a task from this pet's task list if it exists."""
-        pass
+        if task in self.tasks:
+            self.tasks.remove(task)
 
     def get_tasks(self) -> list:
         """Return all tasks for this pet."""
-        pass
+        return self.tasks
 
 
 @dataclass
@@ -43,37 +42,35 @@ class Owner:
 
     def add_pet(self, pet: Pet):
         """Add a pet to this owner's list."""
-        pass
+        self.pets.append(pet)
 
     def remove_pet(self, pet: Pet):
         """Remove a pet from this owner's list if it exists."""
-        pass
+        if pet in self.pets:
+            self.pets.remove(pet)
 
     def get_all_tasks(self) -> list:
         """Return every task across all pets."""
-        pass
+        all_tasks = []
+        for pet in self.pets:
+            all_tasks.extend(pet.get_tasks())
+        return all_tasks
 
 
 class Scheduler:
+    PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
     def __init__(self, owner: Owner):
         self.owner = owner
 
     def build_schedule(self) -> list:
         """Build an ordered daily plan from all tasks, respecting priority and time."""
-        pass
-
-    def sort_by_time(self, tasks: list) -> list:
-        """Return tasks sorted by scheduled_time (HH:MM)."""
-        pass
-
-    def filter_tasks(self, pet_name: Optional[str] = None, completed: Optional[bool] = None) -> list:
-        """Return tasks filtered by pet name and/or completion status."""
-        pass
-
-    def detect_conflicts(self) -> list:
-        """Return a list of warning messages for tasks scheduled at the same time."""
-        pass
-
-    def handle_recurring(self, task: Task):
-        """After a recurring task is completed, create the next occurrence."""
-        pass
+        tasks = self.owner.get_all_tasks()
+        incomplete = [t for t in tasks if not t.completed]
+        return sorted(
+            incomplete,
+            key=lambda t: (
+                self.PRIORITY_ORDER.get(t.priority, 99),
+                t.scheduled_time or "99:99",
+            ),
+        )
