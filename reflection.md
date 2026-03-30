@@ -74,10 +74,14 @@ The tradeoff is simplicity where exact time is easy to find because overlap dete
 - What behaviors did you test?
 - Why were these tests important?
 
+I focused on the behaviors that are most important, which are marking tasks complete, attaching tasks to pets, sorting by time, advancing a daily recurring task's due date, flagging two tasks at the same time, and getting an empty schedule when there's nothing to run. I picked these because they’re the kinds of things that would mess up the user’s schedule right away. These are core functionalities that the scheduler is supposed to do for a real user.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+
+I'm around 4/5 confident for the flows we test in `pytest`. If I had more time I'd add tests for weekly recurrence, filter_tasks by pet name and completion, and maybe priority ordering inside build_schedule with identical times.
 
 ---
 
