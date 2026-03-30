@@ -7,35 +7,11 @@ st.title("🐾 PawPal+")
 
 st.markdown(
     """
-Welcome to the PawPal+ starter app.
+Welcome to PawPal+. This UI calls into your PawPal+ scheduling logic in `pawpal_system.py`.
 
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
-
-Use this app as your interactive demo once your backend classes/functions exist.
+Add tasks, generate a schedule, and use the same sorting/filtering/conflict ideas you implemented in Python.
 """
 )
-
-with st.expander("Scenario", expanded=True):
-    st.markdown(
-        """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-for their pet(s) based on constraints like time, priority, and preferences.
-
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
-"""
-    )
-
-with st.expander("What you need to build", expanded=True):
-    st.markdown(
-        """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
-"""
-    )
 
 st.divider()
 
@@ -65,45 +41,110 @@ with col2:
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 
-if st.button("Add task"):
-    pet.add_task(Task(
-        title=task_title,
-        duration_minutes=int(duration),
-        priority=priority,
-    ))
+# Optional details used for sorting + conflict warnings
+col4, col5 = st.columns(2)
+with col4:
+    scheduled_time = st.text_input("Time (HH:MM, optional)", value="")
+with col5:
+    frequency = st.selectbox("Frequency", ["once", "daily", "weekly"], index=0)
 
-if pet.get_tasks():
+if st.button("Add task"):
+    pet.add_task(
+        Task(
+            title=task_title,
+            duration_minutes=int(duration),
+            priority=priority,
+            scheduled_time=scheduled_time.strip() or None,
+            frequency=frequency,
+        )
+    )
+
+tasks = pet.get_tasks()
+if tasks:
     st.write("Current tasks:")
-    st.table([
-        {"title": t.title, "duration_minutes": t.duration_minutes, "priority": t.priority}
-        for t in pet.get_tasks()
-    ])
+    for i, t in enumerate(tasks):
+        status = "Done" if t.completed else "To do"
+        due = t.due_date.isoformat() if t.due_date else ""
+        time = t.scheduled_time or "—"
+
+        c1, c2, c3, c4, c5 = st.columns([3, 2, 2, 2, 2])
+        with c1:
+            st.write(f"**{t.title}** ({status})")
+        with c2:
+            st.write(f"Priority: {t.priority}")
+        with c3:
+            st.write(f"Time: {time}")
+        with c4:
+            st.write(f"Freq: {t.frequency}")
+            if due:
+                st.write(f"Due: {due}")
+        with c5:
+            if not t.completed and st.button("Mark complete", key=f"complete_{i}"):
+                t.mark_complete()
+                st.success(f"Marked '{t.title}' complete.")
+                st.rerun()
 else:
     st.info("No tasks yet. Add one above.")
 
 st.divider()
 
 st.subheader("Build Schedule")
-st.caption("This button should call your scheduling logic once you implement it.")
 
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner=st.session_state.owner)
-    schedule = scheduler.build_schedule()
-    conflicts = scheduler.detect_conflicts()
+    pet_name = pet.name
 
-    for warning in conflicts:
+    incomplete_tasks = scheduler.filter_tasks(pet_name=pet_name, completed=False)
+
+    # Conflicts: lightweight exact-time check on the same set the schedule uses
+    warnings = []
+    seen = {}
+    for task in incomplete_tasks:
+        if task.scheduled_time is None:
+            continue
+        if task.scheduled_time in seen:
+            warnings.append(
+                f"Conflict at {task.scheduled_time}: '{task.title}' overlaps with '{seen[task.scheduled_time]}'"
+            )
+        else:
+            seen[task.scheduled_time] = task.title
+
+    for warning in warnings:
         st.warning(warning)
 
-    if not schedule:
-        st.info("No tasks to schedule.")
+    # Priority schedule (incomplete only) + chronological view (can include completed)
+    priority_schedule = scheduler.build_schedule()
+    chron_view = scheduler.sort_by_time(incomplete_tasks)
+
+    if not priority_schedule:
+        st.info("Nothing to schedule (no incomplete tasks).")
     else:
-        st.success(f"Scheduled {len(schedule)} task(s) for today.")
-        st.table([
-            {
-                "Time": t.scheduled_time or "—",
-                "Task": t.title,
-                "Priority": t.priority,
-                "Duration (min)": t.duration_minutes,
-            }
-            for t in schedule
-        ])
+        st.success(f"Scheduled {len(priority_schedule)} task(s) for today.")
+        st.caption("Priority schedule = priority (high→low) then time.")
+        st.table(
+            [
+                {
+                    "Time": t.scheduled_time or "—",
+                    "Task": t.title,
+                    "Priority": t.priority,
+                    "Duration (min)": t.duration_minutes,
+                    "Frequency": t.frequency,
+                    "Due date": t.due_date.isoformat() if t.due_date else "—",
+                }
+                for t in priority_schedule
+            ]
+        )
+
+    if chron_view:
+        st.subheader("Chronological (by time)")
+        st.table(
+            [
+                {
+                    "Time": t.scheduled_time or "—",
+                    "Task": t.title,
+                    "Priority": t.priority,
+                    "Frequency": t.frequency,
+                }
+                for t in chron_view
+            ]
+        )

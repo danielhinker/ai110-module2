@@ -63,3 +63,16 @@ python -m pytest
 I wrote tests for one-off task completion, adding tasks to a pet, time sorting (`sort_by_time`), daily recurrence (`due_date` after `mark_complete`), conflict warnings when two tasks share a time, and an empty schedule when there are no tasks.
 
 **Confidence:** about 4/5 — the core paths above are covered, and the tests hit a few important edge cases too.
+
+## Features
+
+- Add pet care tasks (title, duration, priority, optional time like `HH:MM`, and frequency like `daily`/`weekly`).
+- Generate a daily schedule using priority (high → low) and then time.
+- Sort tasks by time with `sort_by_time()`.
+- Filter tasks by completion status with `filter_tasks()`.
+- Detect basic scheduling conflicts when multiple tasks share the exact same time.
+- Mark tasks complete, including recurrence (daily/weekly tasks update their next due date automatically).
+
+## 📸 Demo
+
+<a href="demo.png" target="_blank"><img src='demo.png' title='PawPal+ Demo' width='' alt='PawPal+ Demo' class='center-block' /></a>
