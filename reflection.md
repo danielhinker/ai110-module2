@@ -4,13 +4,31 @@
 
 **a. Initial design**
 
+Three core actions a user should be able to do:
+1. Enter owner and pet information.
+2. Add or edit tasks for a pet (duration and priority at minimum, with optional things like description and time availability).
+3. Generate and view a daily schedule based on those tasks.
+
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+
+The main classes are Owner, Pet, Task, and Scheduler.
+
+- Owner holds the owner's info and links to their pets.
+- Pet stores pet details and a list of associated tasks.
+- Task represents a single care activity and at minimum has a duration and priority but things like description and time window are worth adding.
+- Scheduler pulls tasks together and builds the daily plan based on priority and duration.
+
+For the relationships, an owner can have many pets, and a pet can have many tasks. If multiple people share a pet, that could become many-to-many but I'd keep it simple for now and handle that as an edge case later.
+
+Edge cases I'm thinking about are zero or invalid durations, tasks that won't fit in the available time, and the schedule needing to rebuild whenever a task is changed.
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+
+due_date was added to Task to support recurring tasks and scheduled_time was changed to a string in "HH:MM" format to keep things simple for now.
 
 ---
 
